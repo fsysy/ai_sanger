@@ -1,0 +1,10 @@
+Tier1
+neural_network: AI python 실행파일
+
+Tier2
+plot: AI training_Set을 만드는 실험 파일, training set을 만들고 그 사진을 저장함
+variant_correcter: variant 수정 인터페이스를 만들기 위한 실험 파일
+
+Tier3
+training_set_maker: plot을 만들기 위한 전단계 실험 파일, variant_correcter의 실험파일임
+maltlab_test: matplotlib의 click event를 확인하기 위한 실험 파일, variant_correcter의 실험파일임
