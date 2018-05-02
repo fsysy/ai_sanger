@@ -1,21 +1,31 @@
 from Bio import SeqIO
 import matplotlib.pyplot as plt
 import os
-file_name = 'MATN3_DES136-7_2-1RD072018-02-14-16-04-15_copy.ab1'
-record = SeqIO.read(file_name, 'abi')
-blue = record.annotations['abif_raw']['DATA9']
-red = record.annotations['abif_raw']['DATA10']
-green = record.annotations['abif_raw']['DATA11']
-yellow = record.annotations['abif_raw']['DATA12']
-call_time = record.annotations['abif_raw']['PLOC2']
-sequence = record.annotations['abif_raw']['PBAS1']
+
 color = ['blue','red','green','yellow']
 sampling_half_length = 100
-dirname = os.path.dirname(file_name)
+dirname = os.getcwd()
+
+record = 0
+blue = 0
+red = 0
+green = 0
+yellow = 0
+call_time = 0
+sequence = 0
+trim_point = 0
+peak_cc = 0
+plot_q = 0
+
+
+#folder_checker
 folder_checker = ["training_set/image/", "training_set/text/", "training_set/image/abbr/", "training_set/text/abbr/"]
+print "folder_checking"
 for i in folder_checker:
-	if not os.path.exists(dirname+i):
-		os.makedirs(dirname+i)
+        print dirname+"/"+i
+	if not os.path.exists(dirname+"/"+i):
+		os.makedirs(dirname+"/"+i)
+		print "foler %s created"%i
 #trim_abi_file:return trim start point, end point
 def abi_trim(seq_record):
 	start = False   # flag for starting position of trimmed sequence
@@ -65,45 +75,64 @@ def peak_calling_choice(trim_point):
         peak_call_end_q = q
         return [peak_call_start_q, peak_call_end_q]
 
+#system activation
+def activate_sys(item):
+        global record,blue,red,green,yellow,call_time
+        record = SeqIO.read(item, 'abi')
+        print item
+        blue = record.annotations['abif_raw']['DATA9']
+        red = record.annotations['abif_raw']['DATA10']
+        green = record.annotations['abif_raw']['DATA11']
+        yellow = record.annotations['abif_raw']['DATA12']
+        call_time = record.annotations['abif_raw']['PLOC2']
+        sequence = record.annotations['abif_raw']['PBAS1']
+        trim_point = abi_trim(record)
+        peak_cc = peak_calling_choice(trim_point)
+        plot_q = peak_cc[0]
+        print peak_cc
 
-trim_point = abi_trim(record)
+        for i in range(peak_cc[0],peak_cc[1]+1):
+                fig = plt.figure()
+                peak_cc_time = [call_time[i],call_time[i]]
+                plot_range = [peak_cc_time[0]-sampling_half_length,peak_cc_time[0]+sampling_half_length]
+                G = list(blue)[plot_range[0]:plot_range[1]]
+                A = list(red)[plot_range[0]:plot_range[1]]
+                T = list(green)[plot_range[0]:plot_range[1]]
+                C = list(yellow)[plot_range[0]:plot_range[1]]
+                Total = G+A+T+C
+                Max_total = max(Total)
 
-peak_cc = peak_calling_choice(trim_point)
-plot_q = peak_cc[0]
-print peak_cc
-f = open(dirname + folder_checker[1]+file_name+'_training_set.txt',"w")
-f_abbr = open(dirname + folder_checker[3]+file_name+'_training_set_abbr.txt',"w")
-for i in range(peak_cc[0],peak_cc[1]+1):
-        fig = plt.figure()
-        peak_cc_time = [call_time[i],call_time[i]]
-        plot_range = [peak_cc_time[0]-sampling_half_length,peak_cc_time[0]+sampling_half_length]
-	G = list(blue)[plot_range[0]:plot_range[1]]
-	A = list(red)[plot_range[0]:plot_range[1]]
-	T = list(green)[plot_range[0]:plot_range[1]]
-	C = list(yellow)[plot_range[0]:plot_range[1]]
-	Total = G+A+T+C
-	Max_total = max(Total)
+                g = [float(x)/float(Max_total) for x in G]
+                a = [float(x)/float(Max_total) for x in A]
+                t = [float(x)/float(Max_total) for x in T]
+                c = [float(x)/float(Max_total) for x in C]
+                plt.plot(g, color='black')
+                plt.plot(a, color='green')
+                plt.plot(t, color='red')
+                plt.plot(c, color='blue')
+                fig.suptitle(sequence[i])
+                plt.grid(True)
+                plt.text(100,100,sequence[i])
 
-	g = [float(x)/float(Max_total) for x in G]
-	a = [float(x)/float(Max_total) for x in A]
-	t = [float(x)/float(Max_total) for x in T]
-	c = [float(x)/float(Max_total) for x in C]
-        plt.plot(g, color='black')
-        plt.plot(a, color='green')
-        plt.plot(t, color='red')
-        plt.plot(c, color='blue')
-	fig.suptitle(sequence[i])
-	plt.grid(True)
-	plt.text(100,100,sequence[i])
+                #plt.show()
+                if 'GATC'.find(sequence[i]) == -1:
+                        fig.savefig(dirname+'/' + folder_checker[2]+sequence[i]+'-'+str(i)+"-"+item+'.png')
+                        f_abbr.write(','.join(str(e) for e in [sequence[i],i,item]+g+a+t+c)+"\n")
+                else:
+                        fig.savefig(dirname+'/' + folder_checker[0]+sequence[i]+'-'+str(i)+"-"+item+'.png')
+                        f.write(','.join(str(e) for e in [sequence[i],i,item]+g+a+t+c)+"\n")
+                plt.close(fig)
 
-        #plt.show()
-	if 'GATC'.find(sequence[i]) == -1:
-		fig.savefig(dirname + folder_checker[2]+sequence[i]+'-'+str(i)+"-"+file_name+'.png')
-		f_abbr.write(','.join(str(e) for e in [sequence[i],i,file_name]+g+a+t+c)+"\n")
-	else:
-		fig.savefig(dirname + folder_checker[0]+sequence[i]+'-'+str(i)+"-"+file_name+'.png')
-		f.write(','.join(str(e) for e in [sequence[i],i,file_name]+g+a+t+c)+"\n")
-	plt.close(fig)
+#go!
+f = open(dirname+'/' + folder_checker[1]+'normal'+'_training_set.txt',"w")
+f_abbr = open(dirname+'/' + folder_checker[3]+'abbr'+'_training_set_abbr.txt',"w")
+file_list = os.listdir(dirname)
+file_list.sort()
+for item in file_list:
+        if item.find('.ab1') is not -1:
+                activate_sys(item)
+
+
 f.close()
 f_abbr.close()
 
