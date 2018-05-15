@@ -77,9 +77,9 @@ def count_gap(seq1, refseq):
 def nucleotide_click(xpoint,ypoint):
         if ypoint<-5 and ypoint >-20:
                 print xpoint, ypoint
-                with open("result.ab1","w") as output_handle:
-                        SeqIO.write(record, output_handle, "abi")
-                        print "check the save data"
+                #with open("result.ab1","w") as output_handle:
+                        #SeqIO.write(record, output_handle, "abi")
+                        #print ""#"check the save data"
         
 def press(event):
     print('press', event.key)
